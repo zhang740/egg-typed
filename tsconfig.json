@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "target": "es6",
+        "module": "commonjs",
+        "jsx": "react",
+        "moduleResolution": "node",
+        "noImplicitAny": true,
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "preserveConstEnums": true,
+        "declaration": true,
+        "sourceMap": false,
+        "rootDir": "src",
+        "outDir": "",
+        "pretty": true
+    },
+    "include": [
+        "src/**/*.ts"
+    ],
+    "compileOnSave": true
+}

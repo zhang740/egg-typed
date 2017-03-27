@@ -1,0 +1,45 @@
+{
+  "name": "egg-typed",
+  "version": "0.0.1",
+  "description": "typed for egg.",
+  "dependencies": {
+    "@types/koa": "2.0.39",
+    "egg": "^1.0.0",
+    "power-di": "^1.0.6"
+  },
+  "devDependencies": {
+    "autod": "^2.8.0",
+    "cheerio": "^0.22.0",
+    "egg-bin": "^3.1.0",
+    "egg-ci": "^1.6.0",
+    "egg-mock": "^3.2.0",
+    "eslint": "^3.18.0",
+    "eslint-config-egg": "^3.2.0",
+    "supertest": "^3.0.0",
+    "webstorm-disable-index": "^1.1.2"
+  },
+  "engines": {
+    "node": ">=6.0.0"
+  },
+  "scripts": {
+    "test": "npm run lint -- --fix && npm run test-local",
+    "test-local": "egg-bin test",
+    "cov": "egg-bin cov",
+    "lint": "eslint .",
+    "ci": "npm run lint && npm run cov",
+    "autod": "autod"
+  },
+  "ci": {
+    "version": "6, 7"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "keywords": [
+    "egg",
+    "egg-framework"
+  ],
+  "author": "zhang740",
+  "license": "MIT"
+}
