@@ -34,12 +34,17 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "git+https://github.com/zhang740/egg-typed.git"
   },
   "keywords": [
+    "ts",
     "egg",
     "egg-framework"
   ],
   "author": "zhang740",
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/zhang740/egg-typed/issues"
+  },
+  "homepage": "https://github.com/zhang740/egg-typed#readme"
 }
