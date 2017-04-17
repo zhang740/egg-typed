@@ -21,9 +21,9 @@ export default class HomeController extends Controller {
     @routerMetadata({ url: ['/test', '/test2'] })
     test() {
         this.ctx.body = `
-            Hello World, Test.
+            Hello World, Test.(${this.ctx.url})
             ${this.service.test.get(123).name}
-            ${this.GetService<TestService>(TestService).get('3333').name}
+            ${this.app.GetService<TestService>(TestService).get('3333').name}
         `;
     }
 };
@@ -34,7 +34,7 @@ import { Service, Context } from 'egg-typed';
 export default class Test extends Service {
 
     constructor(ctx: Context) {
-        super(ctx);
+        super(ctx, { singleton: true }); // singleton, default: false, the same as egg.js
         this.config = this.app.config.test;
     }
 
