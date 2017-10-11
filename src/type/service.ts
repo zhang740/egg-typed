@@ -10,7 +10,7 @@ export class Service extends BaseService {
     singleton: false
   }) {
     super(ctx);
-    const context = (this.app as any).iocContext as IocContext || IocContext.DefaultInstance;
+    const context = this.app.iocContext as IocContext || IocContext.DefaultInstance;
     if (!(this.constructor as any).__type) {
       context.register(this, this.constructor, {
         singleton: config.singleton

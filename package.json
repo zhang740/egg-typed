@@ -1,6 +1,6 @@
 {
   "name": "egg-typed",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "typed for egg.",
   "dependencies": {
     "egg": "^1.9.0",

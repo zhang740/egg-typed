@@ -27,6 +27,7 @@ export default class AppWorkerLoader extends EggLoader {
     // app
     (this as any).loadController();
     // app
+    (this as any).loadRouter(); // 依赖 controller
     this.loadRouterByController(); // 依赖 controller
   }
 

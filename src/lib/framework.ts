@@ -22,12 +22,18 @@ export class Application extends EGGApplication {
     return AppWorkerLoader;
   }
 
-  public config: any;
   public iocContext: IocContext;
 
   public GetService<T>(serviceType: typeof Service) {
     const context = this.iocContext as IocContext || IocContext.DefaultInstance;
     return context.get<T>(serviceType);
+  }
+}
+
+declare module 'egg' {
+  export interface Application {
+    iocContext: IocContext;
+    GetService<T>(serviceType: typeof Service): T;
   }
 }
 
