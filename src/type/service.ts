@@ -1,21 +1,20 @@
-import * as koa from '@types/koa';
-import { BaseContextClass } from './base_context_class';
+import { Service as BaseService, Context } from 'egg';
 import { IocContext } from 'power-di';
 
 export interface ServiceConfig {
-    /** singleton, default: false */
-    singleton?: boolean;
+  /** singleton, default: false */
+  singleton?: boolean;
 }
-export class Service extends BaseContextClass {
-    constructor(ctx: koa.Context, config: ServiceConfig = {
-        singleton: false
-    }) {
-        super(ctx);
-        const context = this.app.iocContext as IocContext || IocContext.DefaultInstance;
-        if (!(this.constructor as any).__type) {
-            context.register(this, this.constructor, {
-                singleton: config.singleton
-            });
-        }
+export class Service extends BaseService {
+  constructor(ctx: Context, config: ServiceConfig = {
+    singleton: false
+  }) {
+    super(ctx);
+    const context = (this.app as any).iocContext as IocContext || IocContext.DefaultInstance;
+    if (!(this.constructor as any).__type) {
+      context.register(this, this.constructor, {
+        singleton: config.singleton
+      });
     }
+  }
 }

@@ -1,6 +1,4 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const base_context_class_1 = require("./base_context_class");
-class Controller extends base_context_class_1.BaseContextClass {
-}
-exports.Controller = Controller;
+var egg_1 = require("egg");
+exports.Controller = egg_1.Controller;

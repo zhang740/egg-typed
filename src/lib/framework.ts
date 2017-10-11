@@ -1,7 +1,7 @@
 'use strict';
 
 import AppWorkerLoader from './app_worker_loader';
-const path = require('path');
+import * as path from 'path';
 const egg = require('egg');
 const EGG_PATH = Symbol.for('egg#eggPath');
 const EGG_LOADER = Symbol.for('egg#loader');
@@ -41,4 +41,4 @@ export {
   AppWorkerLoader,
   AgentWorkerLoader,
   startCluster,
-}
+};

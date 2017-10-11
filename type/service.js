@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const base_context_class_1 = require("./base_context_class");
+const egg_1 = require("egg");
 const power_di_1 = require("power-di");
-class Service extends base_context_class_1.BaseContextClass {
+class Service extends egg_1.Service {
     constructor(ctx, config = {
             singleton: false
         }) {
