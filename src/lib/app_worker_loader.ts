@@ -1,10 +1,14 @@
 'use strict';
 
 import { getRouters } from '../type/router';
+import { Application as EggApplication } from 'egg';
+import { Application } from './framework';
+import { Service, getServices } from '../type/service';
 const EggLoader = require('egg').AppWorkerLoader as ObjectConstructor;
 export { EggLoader };
 
 export default class AppWorkerLoader extends EggLoader {
+  app: EggApplication & Application;
 
   /**
    * 开始加载所有约定目录
@@ -20,15 +24,38 @@ export default class AppWorkerLoader extends EggLoader {
 
     // app > plugin
     (this as any).loadCustomApp();
+
     // app > plugin
     (this as any).loadService();
+    this.registerServiceToIOC();
+
     // app > plugin > core
     (this as any).loadMiddleware();
-    // app
+
+    // app, only for load file
     (this as any).loadController();
-    // app
-    (this as any).loadRouter(); // 依赖 controller
     this.loadRouterByController(); // 依赖 controller
+  }
+
+  registerServiceToIOC() {
+    const app = this.app;
+
+    const ioc = app.iocContext;
+    getServices().forEach(service => {
+      const ServiceType = service.classConstructor;
+
+      ioc.register(() => {
+        const ctx = app.context;
+        if (!(ctx as any).app) {
+          (ctx as any).app = app;
+        }
+        return new ServiceType(ctx);
+      },
+        ServiceType,
+        {
+          singleton: false,
+        });
+    });
   }
 
   loadRouterByController() {

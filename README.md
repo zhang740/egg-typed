@@ -13,19 +13,46 @@ import TestService from '../service/Test';
 
 export default class HomeController extends Controller {
 
-    @routerMetadata({ url: '/' })
-    index() {
-        this.ctx.body = 'Hello World';
-    }
+  @lazyInject(TestService)
+  testService: TestService;
 
-    @routerMetadata({ url: ['/test', '/test2'] })
-    test() {
-        this.ctx.body = `
-            Hello World, Test.(${this.ctx.url})
-            ${this.service.test.get(123).name}
-            ${this.app.GetService<TestService>(TestService).get('3333').name}
-        `;
-    }
+  private requestInfo(id = 'defaultId') {
+    return {
+      url: this.ctx.url,
+      test_service_name: this.testService.get(id).name,
+    };
+  }
+
+  @routerMetadata({ url: '/' })
+  index() {
+      this.ctx.body = 'Hello World';
+  }
+
+  @routerMetadata({ url: ['/test', '/test2'] })
+  test() {
+    this.ctx.body = this.requestInfo();
+  }
+
+  // url by contract
+  // support prefix: 'get'(default), 'put', 'post', 'delete', 'patch'
+  // e.g this url: '/home/name', method: 'get'
+  // 'home' is the name of controller, 'name' is the name of method.
+  @routerMetadata()
+  getName() {
+    this.ctx.body = this.requestInfo();
+  }
+
+  // auto fill params, params > query > body
+  // e.g request: 
+  // /api/params?id=123&code=333
+  // /api/params/123?code=333
+  @routerMetadata({ name: 'params demo', url: '/api/params' })
+  query(id: number, code: string) {
+    this.ctx.body = {
+      ...this.requestInfo(`${id}`),
+      id, code,
+    };
+  }
 };
 
 // [ts source]/service/Test.ts
@@ -33,14 +60,14 @@ import { Service, Context } from 'egg-typed';
 
 export default class Test extends Service {
 
-    constructor(ctx: Context) {
-        super(ctx, { singleton: true }); // singleton, default: false, the same as egg.js
-        this.config = this.app.config.test;
-    }
+  constructor(ctx: Context) {
+      super(ctx, { singleton: true }); // singleton, default: false, the same as egg.js
+      this.config = this.app.config.test;
+  }
 
-    get(id: string) {
-        return { id, name: this.config.key + '_' + id };
-    }
+  get(id: string) {
+      return { id, name: this.config.key + '_' + id };
+  }
 }
 ```
 
@@ -55,20 +82,20 @@ export default class Test extends Service {
 3. An example of tsconfig.json:
 ```json
 {
-    "compilerOptions": {
-        "target": "es6",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "noImplicitAny": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": false,
-        "preserveConstEnums": true,
-        "declaration": true,
-        "sourceMap": true,
-        "rootDir": "src",
-        "outDir": "app",
-        "pretty": true
-    }
+  "compilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "noImplicitAny": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false,
+    "preserveConstEnums": true,
+    "declaration": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "app",
+    "pretty": true
+  }
 }
 ```
 

@@ -2,7 +2,7 @@
 
 import AppWorkerLoader from './app_worker_loader';
 import * as path from 'path';
-const egg = require('egg');
+export const egg = require('egg');
 const EGG_PATH = Symbol.for('egg#eggPath');
 const EGG_LOADER = Symbol.for('egg#loader');
 const AgentWorkerLoader = egg.AgentWorkerLoader;
@@ -11,10 +11,15 @@ const startCluster = egg.startCluster;
 import { Service } from '../type/service';
 import { IocContext } from 'power-di';
 
-export const EGGApplication = egg.Application as ObjectConstructor;
-export const EGGAgent = egg.Agent as ObjectConstructor;
+export class Application extends egg.Application {
 
-export class Application extends EGGApplication {
+  public get iocContext(): IocContext {
+    if (!this._iocContext) {
+      this._iocContext = IocContext.DefaultInstance;
+    }
+    return this._iocContext;
+  }
+
   get [EGG_PATH]() {
     return path.dirname(__dirname);
   }
@@ -22,20 +27,13 @@ export class Application extends EGGApplication {
     return AppWorkerLoader;
   }
 
-  public iocContext: IocContext;
-
   public GetService<T>(serviceType: typeof Service) {
-    const context = this.iocContext as IocContext || IocContext.DefaultInstance;
+    const context = this.iocContext as IocContext;
     return context.get<T>(serviceType);
   }
 }
 
-declare module 'egg' {
-  export interface Application {
-    iocContext: IocContext;
-    GetService<T>(serviceType: typeof Service): T;
-  }
-}
+export const EGGAgent = egg.Agent as ObjectConstructor;
 
 export class Agent extends EGGAgent {
   get [EGG_PATH]() {

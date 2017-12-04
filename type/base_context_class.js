@@ -1,4 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var egg_1 = require("egg");
-exports.BaseContextClass = egg_1.BaseContextClass;
+const egg_1 = require("egg");
+class BaseContextClass extends egg_1.BaseContextClass {
+}
+exports.BaseContextClass = BaseContextClass;
