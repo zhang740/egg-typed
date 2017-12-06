@@ -35,7 +35,15 @@ function getParameterNames(fn) {
 function routerMetadata(data) {
     return function (target, key, descriptor) {
         const typeGlobalName = utils_1.getGlobalType(target.constructor);
-        const typeInfo = Object.assign({}, data, { typeGlobalName, typeClass: target.constructor, paramTypes: Reflect.getMetadata('design:paramtypes', target, key), returnType: Reflect.getMetadata('design:returntype', target, key) });
+        const CtrlType = target.constructor;
+        const routerFn = target[key];
+        const paramTypes = Reflect.getMetadata('design:paramtypes', target, key);
+        const typeInfo = Object.assign({}, data, { typeGlobalName, typeClass: CtrlType, paramTypes: getParameterNames(routerFn).map((name, i) => {
+                return {
+                    name,
+                    type: paramTypes[i]
+                };
+            }), returnType: Reflect.getMetadata('design:returntype', target, key) });
         typeInfo.functionName = key;
         if (!typeInfo.url) {
             const ctrl = typeGlobalName
@@ -47,15 +55,13 @@ function routerMetadata(data) {
             typeInfo.method = nm.method;
         }
         routes.push(typeInfo);
-        const CtrlType = typeInfo.typeClass;
-        const routerFn = target[key];
-        const params = getParameterNames(routerFn);
         const getArgs = (ctx) => {
-            return params.map(p => {
+            return typeInfo.paramTypes.map(p => {
+                const name = p.name;
                 const param = ctx.params || {};
                 const query = ctx.query || {};
                 const body = (ctx.request || {}).body || {};
-                return param[p] || query[p] || body[p] || undefined;
+                return param[name] || query[name] || body[name] || undefined;
             });
         };
         typeInfo.call = function (ctx) {

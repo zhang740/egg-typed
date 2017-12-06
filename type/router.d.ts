@@ -12,8 +12,9 @@ export interface RouterType extends RouterMetadataType {
     typeGlobalName: string;
     functionName?: string;
     paramTypes: {
-        [key: string]: any;
-    };
+        name: string;
+        type: any;
+    }[];
     returnType: any;
     call?: (ctx: Context) => any;
 }

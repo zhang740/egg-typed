@@ -22,7 +22,7 @@ export interface RouterType extends RouterMetadataType {
   typeClass: any;
   typeGlobalName: string;
   functionName?: string;
-  paramTypes: { [key: string]: any };
+  paramTypes: { name: string, type: any }[];
   returnType: any;
   call?: (ctx: Context) => any;
 }
@@ -66,12 +66,20 @@ function getParameterNames(fn: Function) {
 export function routerMetadata(data: RouterMetadataType): any {
   return function (target: any, key: string, descriptor: TypedPropertyDescriptor<any>) {
     const typeGlobalName = getGlobalType(target.constructor);
+    const CtrlType = target.constructor;
+    const routerFn: Function = target[key];
 
+    const paramTypes = Reflect.getMetadata('design:paramtypes', target, key);
     const typeInfo: RouterType = {
       ...data,
       typeGlobalName,
-      typeClass: target.constructor,
-      paramTypes: Reflect.getMetadata('design:paramtypes', target, key),
+      typeClass: CtrlType,
+      paramTypes: getParameterNames(routerFn).map((name, i) => {
+        return {
+          name,
+          type: paramTypes[i]
+        };
+      }),
       returnType: Reflect.getMetadata('design:returntype', target, key),
     };
 
@@ -87,16 +95,13 @@ export function routerMetadata(data: RouterMetadataType): any {
     }
     routes.push(typeInfo);
 
-    const CtrlType = typeInfo.typeClass;
-    const routerFn: Function = target[key];
-    const params = getParameterNames(routerFn);
-
     const getArgs = (ctx: Context) => {
-      return params.map(p => {
+      return typeInfo.paramTypes.map(p => {
+        const name = p.name;
         const param = ctx.params || {};
         const query = ctx.query || {};
         const body = (ctx.request || {} as any).body || {};
-        return param[p] || query[p] || body[p] || undefined;
+        return param[name] || query[name] || body[name] || undefined;
       });
     };
 
