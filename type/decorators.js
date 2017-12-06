@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+const decorators_1 = require("power-di/lib/helper/decorators");
 /**
  * lazy inject, use for Controller/Service class
  * @param type class or string
@@ -7,6 +8,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
  */
 function lazyInject(classType, always = false) {
     return (target, key) => {
+        classType = decorators_1.getGlobalTypeByDecorator(classType, target, key);
         Object.defineProperty(target, key, {
             configurable: !always,
             get: function () {

@@ -1,12 +1,14 @@
 import { BaseContextClass } from './base_context_class';
+import { getGlobalTypeByDecorator } from 'power-di/lib/helper/decorators';
 
 /**
  * lazy inject, use for Controller/Service class
  * @param type class or string
  * @param always always read from context. default: false
  */
-export function lazyInject(classType: any, always = false): any {
+export function lazyInject(classType?: any, always = false): any {
   return (target: any, key: any) => {
+    classType = getGlobalTypeByDecorator(classType, target, key);
     Object.defineProperty(target, key, {
       configurable: !always,
       get: function (this: BaseContextClass) {
