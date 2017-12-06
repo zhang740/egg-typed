@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+require("reflect-metadata");
 const utils_1 = require("power-di/utils");
 const routes = [];
 const methods = ['get', 'put', 'post', 'delete', 'patch'];
@@ -31,33 +32,39 @@ function getParameterNames(fn) {
         ? []
         : result;
 }
-const ET_PARAMS = 'ET_PARAMS';
 function routerMetadata(data) {
     return function (target, key, descriptor) {
-        const typeInfo = Object.assign({}, data);
-        typeInfo.type = utils_1.getGlobalType(target.constructor).split('_')[0];
-        typeInfo.type = typeInfo.type[0].toLowerCase() + typeInfo.type.substring(1);
+        const typeGlobalName = utils_1.getGlobalType(target.constructor);
+        const typeInfo = Object.assign({}, data, { typeGlobalName, typeClass: target.constructor, paramTypes: Reflect.getMetadata('design:paramtypes', target, key), returnType: Reflect.getMetadata('design:returntype', target, key) });
         typeInfo.functionName = key;
         if (!typeInfo.url) {
-            let ctrl = typeInfo.type.toLowerCase();
-            ctrl = ctrl.replace('controller', '');
+            const ctrl = typeGlobalName
+                .split('_')[0]
+                .toLowerCase()
+                .replace('controller', '');
             let nm = getNameAndMethod(typeInfo.functionName);
             typeInfo.url = `/${ctrl}/${nm.name}`;
             typeInfo.method = nm.method;
         }
         routes.push(typeInfo);
+        const CtrlType = typeInfo.typeClass;
         const routerFn = target[key];
         const params = getParameterNames(routerFn);
+        const getArgs = (ctx) => {
+            return params.map(p => {
+                const param = ctx.params || {};
+                const query = ctx.query || {};
+                const body = (ctx.request || {}).body || {};
+                return param[p] || query[p] || body[p] || undefined;
+            });
+        };
+        typeInfo.call = function (ctx) {
+            const ctrl = new CtrlType(ctx);
+            const args = getArgs(ctx);
+            return routerFn.apply(ctrl, args);
+        };
         return {
-            value: function () {
-                const args = params.map(p => {
-                    const param = this.ctx.params || {};
-                    const query = this.ctx.query || {};
-                    const body = (this.ctx.request || {}).body || {};
-                    return param[p] || query[p] || body[p] || undefined;
-                });
-                return routerFn.apply(this, args.length ? args : arguments);
-            }
+            value: typeInfo.call
         };
     };
 }

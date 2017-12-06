@@ -59,8 +59,18 @@ export default class AppWorkerLoader extends EggLoader {
   }
 
   loadRouterByController() {
-    getRouters().forEach(route => {
-      (this as any).app.router[route.method || 'all'](route.url, `${route.type}.${route.functionName}`);
-    });
+    getRouters()
+      .sort((a, b) => {
+        if (a.url === b.url) {
+          return 0;
+        }
+        if (a.url === '/*') {
+          return 1;
+        }
+        return a.url > b.url ? -1 : 1;
+      })
+      .forEach(route => {
+        (this as any).app.router[route.method || 'all'](route.url, route.call);
+      });
   }
 }
