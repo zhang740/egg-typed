@@ -19,17 +19,21 @@
 
 An onther style (like C#/java) of [egg](https://github.com/eggjs/egg) enterprise app framework.
 
+All files in `app` directory (exclude the directory name is kind of ['view', 'template', 'public']) will load automatically.
+
+Demo: [odux-egg-example](https://github.com/zhang740/odux-egg-example)
+
 ## Quick overview
 
 ### Controller
 ```ts
-// [ts source]/controller/home.ts
 import { Controller, routerMetadata } from 'egg-typed';
 import TestService from '../service/Test';
 
 export default class HomeController extends Controller {
 
-  @lazyInject(TestService)
+  // @lazyInject(TestService)
+  @lazyInject() // tsconfig.json -> "emitDecoratorMetadata": true
   testService: TestService;
 
   private requestInfo(id = 'defaultId') {
@@ -51,7 +55,7 @@ export default class HomeController extends Controller {
 
   // url by contract
   // support prefix: 'get'(default), 'put', 'post', 'delete', 'patch'
-  // e.g this url: '/home/name', method: 'get'
+  // e.g this url is: '/home/name', method: 'get'
   // 'home' is the name of controller, 'name' is the name of method.
   @routerMetadata()
   getName() {
@@ -74,20 +78,18 @@ export default class HomeController extends Controller {
 
 ### Service
 ```ts
-// [ts source]/service/Test.ts
-import { Service, Context } from 'egg-typed';
+import { Service, serviceMetadata, Context } from 'egg-typed';
 
-export default class Test extends Service {
-
-  constructor(ctx: Context) {
-      super(ctx, { singleton: true }); // singleton, default: false, the same as egg.js
-      this.config = this.app.config.test;
-  }
-
-  get(id: string) {
-      return { id, name: this.config.key + '_' + id };
+@serviceMetadata()
+export default class TestService extends Service {
+  get(id: string | number) {
+    return {
+      id,
+      name: this.app.config.test + '_' + id,
+    };
   }
 }
+
 ```
 
 ## Using && Configure

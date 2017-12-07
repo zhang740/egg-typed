@@ -1,5 +1,7 @@
 'use strict';
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { getRouters } from './type/router';
 import { Application as EggApplication } from 'egg';
 import { Application } from './framework';
@@ -25,16 +27,47 @@ export default class AppWorkerLoader extends EggLoader {
     // app > plugin
     (this as any).loadCustomApp();
 
-    // app > plugin
-    (this as any).loadService();
+    // load app files
+    this.loadApp();
+
+    // register service
     this.registerServiceToIOC();
 
     // app > plugin > core
     (this as any).loadMiddleware();
 
-    // app, only for load file
-    (this as any).loadController();
-    this.loadRouterByController(); // 依赖 controller
+    // register router
+    this.registerRouter();
+  }
+
+  loadDir(dirPath: string) {
+    const self = this as any;
+    fs.readdirSync(dirPath)
+      .filter(dir => [
+        'view',
+        'template',
+        'public',
+      ].indexOf(dir) < 0)
+      .forEach(dirName => {
+        const fullPath = path.join(dirPath, dirName);
+        const stat = fs.statSync(fullPath);
+        if (stat.isDirectory()) {
+          this.loadDir(fullPath);
+        } else if (stat.isFile && path.parse(dirName).ext === '.js') {
+          try {
+            require(fullPath);
+          } catch (err) {
+            err.message = `[egg-typed] load file: ${fullPath}, error: ${err.message}`;
+            throw err;
+          }
+        }
+      });
+  }
+
+  loadApp() {
+    const self = this as any;
+    const baseDir: string = self.options.baseDir;
+    this.loadDir(path.join(baseDir, 'app'));
   }
 
   registerServiceToIOC() {
@@ -58,7 +91,7 @@ export default class AppWorkerLoader extends EggLoader {
     });
   }
 
-  loadRouterByController() {
+  registerRouter() {
     getRouters()
       .sort((a, b) => {
         if (a.url === b.url) {
