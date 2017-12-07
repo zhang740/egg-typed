@@ -8,7 +8,7 @@ const EGG_LOADER = Symbol.for('egg#loader');
 const AgentWorkerLoader = egg.AgentWorkerLoader;
 const startCluster = egg.startCluster;
 
-import { Service } from '../type/service';
+import { Service } from './type/service';
 import { IocContext } from 'power-di';
 
 export class Application extends egg.Application {

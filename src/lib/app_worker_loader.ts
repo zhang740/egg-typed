@@ -1,9 +1,9 @@
 'use strict';
 
-import { getRouters } from '../type/router';
+import { getRouters } from './type/router';
 import { Application as EggApplication } from 'egg';
 import { Application } from './framework';
-import { Service, getServices } from '../type/service';
+import { Service, getServices } from './type/service';
 const EggLoader = require('egg').AppWorkerLoader as ObjectConstructor;
 export { EggLoader };
 

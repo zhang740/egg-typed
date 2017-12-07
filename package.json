@@ -2,6 +2,8 @@
   "name": "egg-typed",
   "version": "0.1.2",
   "description": "typed for egg.",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
   "dependencies": {
     "egg": "^2.0.0",
     "power-di": "^1.2.1"
@@ -29,7 +31,7 @@
     "lint": "eslint .",
     "ci": "npm run lint && npm run cov",
     "autod": "autod",
-    "ts": "rimraf type lib && tsc",
+    "ts": "rimraf lib && tsc",
     "prepublish": "npm run ts",
     "postpublish": "node scripts/published.js"
   },

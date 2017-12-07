@@ -1,11 +1,27 @@
 # egg-typed
 
-Provide strong support for [egg](https://github.com/eggjs/egg) enterprise app framework.
+[![NPM version][npm-image]][npm-url]
+[![build status][travis-image]][travis-url]
+[![Test coverage][codecov-image]][codecov-url]
+[![David deps][david-image]][david-url]
+[![Known Vulnerabilities][snyk-image]][snyk-url]
 
+[npm-image]: https://img.shields.io/npm/v/egg-typed.svg?style=flat-square
+[npm-url]: https://npmjs.org/package/egg-typed
+[travis-image]: https://img.shields.io/travis/eggjs/egg-typed.svg?style=flat-square
+[travis-url]: https://travis-ci.org/eggjs/egg-typed
+[codecov-image]: https://codecov.io/github/eggjs/egg-typed/coverage.svg?branch=master
+[codecov-url]: https://codecov.io/github/eggjs/egg-typed?branch=master
+[david-image]: https://img.shields.io/david/eggjs/egg-typed.svg?style=flat-square
+[david-url]: https://david-dm.org/eggjs/egg-typed
+[snyk-image]: https://snyk.io/test/npm/egg-typed/badge.svg?style=flat-square
+[snyk-url]: https://snyk.io/test/npm/egg-typed
+
+An onther style (like C#/java) of [egg](https://github.com/eggjs/egg) enterprise app framework.
 
 ## Quick overview
 
-you can write Controller/Service like this:
+### Controller
 ```ts
 // [ts source]/controller/home.ts
 import { Controller, routerMetadata } from 'egg-typed';
@@ -54,7 +70,10 @@ export default class HomeController extends Controller {
     };
   }
 };
+```
 
+### Service
+```ts
 // [ts source]/service/Test.ts
 import { Service, Context } from 'egg-typed';
 
@@ -88,7 +107,7 @@ export default class Test extends Service {
     "moduleResolution": "node",
     "noImplicitAny": true,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": false,
+    "emitDecoratorMetadata": true,
     "preserveConstEnums": true,
     "declaration": true,
     "sourceMap": true,
@@ -119,5 +138,5 @@ require('egg-typed').startCluster({
 
 ## Questions & Suggestions
 
-Please open an issue [here](https://github.com/eggjs/egg/issues).
+Please open an issue [here](https://github.com/zhang740/egg-typed/issues).
 
