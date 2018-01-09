@@ -105,10 +105,12 @@ export function routerMetadata(data: RouterMetadataType): any {
       });
     };
 
-    typeInfo.call = function (this: undefined, ctx: Context) {
+    typeInfo.call = async function (this: undefined, ctx: Context) {
       const ctrl = new CtrlType(ctx);
       const args = getArgs(ctx);
-      return routerFn.apply(ctrl, args);
+      const ret = await Promise.resolve(routerFn.apply(ctrl, args));
+      ctx.body = ret;
+      return ret;
     };
 
     return {

@@ -50,7 +50,7 @@ export default class HomeController extends Controller {
 
   @routerMetadata({ url: ['/test', '/test2'] })
   test() {
-    this.ctx.body = this.requestInfo();
+    return this.requestInfo();
   }
 
   // url by contract
@@ -59,7 +59,7 @@ export default class HomeController extends Controller {
   // 'home' is the name of controller, 'name' is the name of method.
   @routerMetadata()
   getName() {
-    this.ctx.body = this.requestInfo();
+    return this.requestInfo();
   }
 
   // auto fill params, params > query > body
@@ -68,7 +68,7 @@ export default class HomeController extends Controller {
   // /api/params/123?code=333
   @routerMetadata({ name: 'params demo', url: '/api/params' })
   query(id: number, code: string) {
-    this.ctx.body = {
+    return {
       ...this.requestInfo(`${id}`),
       id, code,
     };
