@@ -13,6 +13,9 @@ export {
   routerMetadata,
   RouterMetadataType,
   RouterType,
+  FromBody,
+  FromParam,
+  FromQuery,
 } from './type/router';
 export * from './type/base_context_class';
 export * from './type/decorators';

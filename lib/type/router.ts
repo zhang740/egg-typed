@@ -62,6 +62,41 @@ function getParameterNames(fn: Function) {
     : result;
 }
 
+const paramRules: { [type: string]: { [key: string]: { [index: number]: (ctx: Context, name: string) => any } } } = {};
+
+function getMethodRules(target: any, key: string) {
+  const typeGlobalName = getGlobalType(target.constructor);
+  if (!paramRules[typeGlobalName]) {
+    paramRules[typeGlobalName] = {};
+  }
+  const typeRule = paramRules[typeGlobalName];
+  if (!typeRule[key]) {
+    typeRule[key] = {};
+  }
+  return typeRule[key];
+}
+
+export function FromBody(): ParameterDecorator {
+  return (target, key, index) => {
+    const methodRule = getMethodRules(target, key as string);
+    methodRule[index] = (ctx: Context, name: string) => (ctx.request.body as any)[name];
+  };
+}
+
+export function FromParam(): ParameterDecorator {
+  return (target, key, index) => {
+    const methodRule = getMethodRules(target, key as string);
+    methodRule[index] = (ctx: Context, name: string) => (ctx.params as any)[name];
+  };
+}
+
+export function FromQuery(): ParameterDecorator {
+  return (target, key, index) => {
+    const methodRule = getMethodRules(target, key as string);
+    methodRule[index] = (ctx: Context, name: string) => (ctx.query as any)[name];
+  };
+}
+
 export function routerMetadata(data: RouterMetadataType = {}): any {
   return function (target: any, key: string) {
     const typeGlobalName = getGlobalType(target.constructor);
@@ -76,7 +111,7 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
       paramTypes: getParameterNames(routerFn).map((name, i) => {
         return {
           name,
-          type: paramTypes[i]
+          type: paramTypes[i],
         };
       }),
       returnType: Reflect.getMetadata('design:returntype', target, key),
@@ -97,9 +132,16 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
     }
     routes.push(typeInfo);
 
+    const methodRules = (paramRules[typeGlobalName] || {})[key] || {};
+
     const getArgs = (ctx: Context) => {
-      return typeInfo.paramTypes.map(p => {
+      return typeInfo.paramTypes.map((p, i) => {
         const name = p.name;
+
+        if (methodRules[i]) {
+          return methodRules[i](ctx, name);
+        }
+
         const param = ctx.params || {};
         const query = ctx.query || {};
         const body = (ctx.request || {} as any).body || {};
