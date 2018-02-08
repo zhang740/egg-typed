@@ -1,11 +1,13 @@
 {
   "name": "egg-typed",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "typed for egg.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
-    "*.js"
+    "app/**/*.js",
+    "config/**/*.js",
+    "lib/**/*.js"
   ],
   "dependencies": {
     "egg": "^2.3.0",
@@ -35,7 +37,7 @@
     "lint": "eslint .",
     "ci": "npm run lint && npm run cov",
     "autod": "autod",
-    "ts": "rimraf lib/**/*.js && tsc",
+    "ts": "rimraf app/**/*.js lib/**/*.js && tsc",
     "prepublish": "npm run ts",
     "postpublish": "node scripts/published.js"
   },
