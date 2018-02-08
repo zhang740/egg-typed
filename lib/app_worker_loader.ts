@@ -6,7 +6,7 @@ import { getRouters } from './type/router';
 import { Application as EggApplication } from 'egg';
 import { Application } from './framework';
 import { getServices } from './type/service';
-const EggLoader = require('egg').AppWorkerLoader as ObjectConstructor;
+const EggLoader = require('egg').AppWorkerLoader as any;
 export { EggLoader };
 
 export default class AppWorkerLoader extends EggLoader {
