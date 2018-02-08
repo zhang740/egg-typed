@@ -5,7 +5,7 @@ import * as path from 'path';
 import { getRouters } from './type/router';
 import { Application as EggApplication } from 'egg';
 import { Application } from './framework';
-import { Service, getServices } from './type/service';
+import { getServices } from './type/service';
 const EggLoader = require('egg').AppWorkerLoader as ObjectConstructor;
 export { EggLoader };
 
@@ -41,7 +41,6 @@ export default class AppWorkerLoader extends EggLoader {
   }
 
   loadDir(dirPath: string) {
-    const self = this as any;
     fs.readdirSync(dirPath)
       .filter(dir => [
         'view',
@@ -77,17 +76,7 @@ export default class AppWorkerLoader extends EggLoader {
     getServices().forEach(service => {
       const ServiceType = service.classConstructor;
 
-      ioc.register(() => {
-        const ctx = app.context;
-        if (!(ctx as any).app) {
-          (ctx as any).app = app;
-        }
-        return new ServiceType(ctx);
-      },
-        ServiceType,
-        {
-          singleton: false,
-        });
+      ioc.register(ServiceType, ServiceType, { autoNew: false });
     });
   }
 
@@ -103,7 +92,7 @@ export default class AppWorkerLoader extends EggLoader {
         return a.url > b.url ? -1 : 1;
       })
       .forEach(route => {
-        (this as any).app.router[route.method || 'all'](route.url, route.call);
+        (this as any).app.router[route.method || 'all'](route.url, route.call());
       });
   }
 }

@@ -1,8 +1,7 @@
 import {
   Service as BaseService,
   Application as EggApplication,
-  Context,
-} from 'egg';
+} from './base';
 import { IocContext } from 'power-di';
 import { Application } from '../framework';
 
@@ -12,6 +11,11 @@ export interface ServiceConfig {
 }
 export abstract class Service extends BaseService {
   app: EggApplication & Application;
+
+  public GetComponent<T>(classType: any) {
+    const context = this.ctx.iocContext as IocContext;
+    return context.get<T>(classType);
+  }
 }
 
 export interface ServiceMetadataType {
@@ -24,7 +28,7 @@ export interface ServiceType extends ServiceMetadataType {
 }
 
 export function serviceMetadata(data: ServiceMetadataType = {}): any {
-  const config = data.config || {};
+  // const config = data.config || {};
 
   return function (target: any) {
     services.push({
@@ -32,6 +36,10 @@ export function serviceMetadata(data: ServiceMetadataType = {}): any {
       classConstructor: target,
     });
   };
+}
+
+export function componentMetadata(data: ServiceMetadataType = {}): any {
+  return serviceMetadata(data);
 }
 
 export function getServices() {

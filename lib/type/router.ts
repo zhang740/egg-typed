@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { getGlobalType } from 'power-di/utils';
-import { Controller } from './controller';
 import { Context } from './base_context_class';
 
 const routes: RouterType[] = [];
@@ -24,7 +23,7 @@ export interface RouterType extends RouterMetadataType {
   functionName?: string;
   paramTypes: { name: string, type: any }[];
   returnType: any;
-  call?: (ctx: Context) => any;
+  call?: () => (ctx: Context) => any;
 }
 
 const methods: MethodType[] = ['get', 'put', 'post', 'delete', 'patch'];
@@ -63,8 +62,8 @@ function getParameterNames(fn: Function) {
     : result;
 }
 
-export function routerMetadata(data: RouterMetadataType): any {
-  return function (target: any, key: string, descriptor: TypedPropertyDescriptor<any>) {
+export function routerMetadata(data: RouterMetadataType = {}): any {
+  return function (target: any, key: string) {
     const typeGlobalName = getGlobalType(target.constructor);
     const CtrlType = target.constructor;
     const routerFn: Function = target[key];
@@ -105,7 +104,7 @@ export function routerMetadata(data: RouterMetadataType): any {
       });
     };
 
-    typeInfo.call = async function (this: undefined, ctx: Context) {
+    const call = async function (this: undefined, ctx: Context) {
       const ctrl = new CtrlType(ctx);
       const args = getArgs(ctx);
       const ret = await Promise.resolve(routerFn.apply(ctrl, args));
@@ -113,8 +112,10 @@ export function routerMetadata(data: RouterMetadataType): any {
       return ret;
     };
 
+    typeInfo.call = () => target[key];
+
     return {
-      value: typeInfo.call
+      value: call
     };
   };
 }

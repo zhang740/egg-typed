@@ -2,6 +2,7 @@ export * from './framework.js';
 
 export * from './type/controller';
 export {
+  componentMetadata,
   serviceMetadata,
   Service,
   ServiceConfig,

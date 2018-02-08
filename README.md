@@ -32,8 +32,9 @@ import TestService from '../service/Test';
 
 export default class HomeController extends Controller {
 
-  // @lazyInject(TestService)
-  @lazyInject() // tsconfig.json -> "emitDecoratorMetadata": true
+  // @lazyInject('Context', TestService)
+  // @lazyInjectFromCtx() // equal
+  @lazyInject('Context') // tsconfig.json -> "emitDecoratorMetadata": true
   testService: TestService;
 
   private requestInfo(id = 'defaultId') {
@@ -41,16 +42,6 @@ export default class HomeController extends Controller {
       url: this.ctx.url,
       test_service_name: this.testService.get(id).name,
     };
-  }
-
-  @routerMetadata({ url: '/' })
-  index() {
-      this.ctx.body = 'Hello World';
-  }
-
-  @routerMetadata({ url: ['/test', '/test2'] })
-  test() {
-    return this.requestInfo();
   }
 
   // url by contract
