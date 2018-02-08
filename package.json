@@ -1,13 +1,14 @@
 {
   "name": "egg-typed",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "typed for egg.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
     "app/**/*.js",
     "config/**/*.js",
-    "lib/**/*.js"
+    "lib/**/*.js",
+    "**/*.d.ts"
   ],
   "dependencies": {
     "egg": "^2.3.0",
