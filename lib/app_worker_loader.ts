@@ -36,6 +36,7 @@ export default class AppWorkerLoader extends EggLoader {
         'view',
         'template',
         'public',
+        'test',
       ].indexOf(dir) < 0)
       .forEach(dirName => {
         const fullPath = path.join(dirPath, dirName);

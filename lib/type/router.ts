@@ -83,13 +83,16 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
     };
 
     typeInfo.functionName = key;
+
+    let nm = getNameAndMethod(typeInfo.functionName);
     if (!typeInfo.url) {
       const ctrl = typeGlobalName
         .split('_')[0]
         .toLowerCase()
         .replace('controller', '');
-      let nm = getNameAndMethod(typeInfo.functionName);
       typeInfo.url = `/${ctrl}/${nm.name}`;
+    }
+    if (!typeInfo.method) {
       typeInfo.method = nm.method;
     }
     routes.push(typeInfo);
@@ -104,11 +107,12 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
       });
     };
 
-    const call = async function (this: undefined, ctx: Context) {
-      const ctrl = new CtrlType(ctx);
-      const args = getArgs(ctx);
+    const call = async function (this: Context, ctx: Context) {
+      const context = this || ctx;
+      const ctrl = new CtrlType(context);
+      const args = getArgs(context);
       const ret = await Promise.resolve(routerFn.apply(ctrl, args));
-      ctx.body = ret;
+      context.body = ret;
       return ret;
     };
 
