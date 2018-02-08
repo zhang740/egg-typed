@@ -17,24 +17,13 @@ export default class AppWorkerLoader extends EggLoader {
    * @since 1.0.0
    */
   load() {
-    // app > plugin > core
-    (this as any).loadApplicationExtend();
-    (this as any).loadRequestExtend();
-    (this as any).loadResponseExtend();
-    (this as any).loadContextExtend();
-    (this as any).loadHelperExtend();
-
-    // app > plugin
-    (this as any).loadCustomApp();
+    super.load();
 
     // load app files
     this.loadApp();
 
     // register service
-    this.registerServiceToIOC();
-
-    // app > plugin > core
-    (this as any).loadMiddleware();
+    this.registerServiceToAppIOC();
 
     // register router
     this.registerRouter();
@@ -43,6 +32,7 @@ export default class AppWorkerLoader extends EggLoader {
   loadDir(dirPath: string) {
     fs.readdirSync(dirPath)
       .filter(dir => [
+        'assets',
         'view',
         'template',
         'public',
@@ -69,7 +59,7 @@ export default class AppWorkerLoader extends EggLoader {
     this.loadDir(path.join(baseDir, 'app'));
   }
 
-  registerServiceToIOC() {
+  registerServiceToAppIOC() {
     const app = this.app;
 
     const ioc = app.iocContext;
