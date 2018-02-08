@@ -112,7 +112,9 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
       const ctrl = new CtrlType(context);
       const args = getArgs(context);
       const ret = await Promise.resolve(routerFn.apply(ctrl, args));
-      context.body = ret;
+      if (ret !== undefined) {
+        context.body = ret;
+      }
       return ret;
     };
 
