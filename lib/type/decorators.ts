@@ -63,10 +63,10 @@ export function lazyInject(from: 'Application' | 'Context', classType?: any): an
   };
 }
 
-export function lazyInjectFromApp(classType?: any) {
+export function loadFromApp(classType?: any) {
   return lazyInject('Application', classType);
 }
 
-export function lazyInjectFromCtx(classType?: any) {
+export function loadFromCtx(classType?: any) {
   return lazyInject('Context', classType);
 }

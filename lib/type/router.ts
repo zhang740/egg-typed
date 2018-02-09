@@ -14,7 +14,7 @@ export type MethodType =
 export interface RouterMetadataType {
   name?: string;
   method?: MethodType;
-  url?: string | RegExp | string[] | RegExp[];
+  url?: string | RegExp | string[] | RegExp[] | ((app: Application) => string);
   descrption?: string;
 }
 
@@ -84,7 +84,7 @@ function getMethodRules(target: any, key: string) {
       param: {},
     };
   }
-  return extRules[key];
+  return extRules[ruleKey];
 }
 
 // #region ParameterDecorator
@@ -153,7 +153,7 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
     const CtrlType = target.constructor;
     const routerFn: Function = target[key];
 
-    const paramTypes = Reflect.getMetadata('design:paramtypes', target, key);
+    const paramTypes = Reflect.getMetadata('design:paramtypes', target, key) || [];
     const typeInfo: RouterType = {
       ...data,
       typeGlobalName,
@@ -212,7 +212,7 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
         }
         return ret;
       } catch (error) {
-        this.throw(error, 400);
+        this.throw(400, error);
       }
     };
 
