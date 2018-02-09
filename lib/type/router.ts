@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { getGlobalType } from 'power-di/utils';
 import { Context } from './base_context_class';
+import { Application } from '../framework';
 
 const routes: RouterType[] = [];
 
@@ -17,13 +18,17 @@ export interface RouterMetadataType {
   descrption?: string;
 }
 
+export type GetMiddlewareType = (app: Application) => (Function | Function[]);
+
 export interface RouterType extends RouterMetadataType {
   typeClass: any;
   typeGlobalName: string;
-  functionName?: string;
+  functionName: string;
   paramTypes: { name: string, type: any }[];
   returnType: any;
-  call?: () => (ctx: Context) => any;
+  call: () => (ctx: Context) => any;
+  beforeMiddleware: GetMiddlewareType[];
+  afterMiddleware: GetMiddlewareType[];
 }
 
 const methods: MethodType[] = ['get', 'put', 'post', 'delete', 'patch'];
@@ -62,42 +67,87 @@ function getParameterNames(fn: Function) {
     : result;
 }
 
-const paramRules: { [type: string]: { [key: string]: { [index: number]: (ctx: Context, name: string) => any } } } = {};
+const extRules: {
+  [typeKey: string]: {
+    param: {
+      [index: string]: (ctx: Context, name: string) => any;
+    };
+  }
+} = {};
+
+const getRuleKey = (target: any, key: any) => `${getGlobalType(target.constructor)}_${key}`;
 
 function getMethodRules(target: any, key: string) {
-  const typeGlobalName = getGlobalType(target.constructor);
-  if (!paramRules[typeGlobalName]) {
-    paramRules[typeGlobalName] = {};
+  const ruleKey = getRuleKey(target, key);
+  if (!extRules[ruleKey]) {
+    extRules[ruleKey] = {
+      param: {},
+    };
   }
-  const typeRule = paramRules[typeGlobalName];
-  if (!typeRule[key]) {
-    typeRule[key] = {};
-  }
-  return typeRule[key];
+  return extRules[key];
 }
 
-export function FromBody(): ParameterDecorator {
+// #region ParameterDecorator
+export function FromCustom(custom: (ctx: Context, name: string) => any, paramName?: string): ParameterDecorator {
   return (target, key, index) => {
     const methodRule = getMethodRules(target, key as string);
-    methodRule[index] = (ctx: Context, name: string) => (ctx.request.body as any)[name];
+    methodRule.param[paramName || index] = custom;
   };
 }
+export function FromBody(paramName?: string): ParameterDecorator {
+  return FromCustom(
+    (ctx: Context, name: string) => (ctx.request.body as any)[name],
+    paramName
+  );
+}
+export function FromParam(paramName?: string): ParameterDecorator {
+  return FromCustom(
+    (ctx: Context, name: string) => (ctx.params as any)[name],
+    paramName
+  );
+}
+export function FromQuery(paramName?: string): ParameterDecorator {
+  return FromCustom(
+    (ctx: Context, name: string) => (ctx.query as any)[name],
+    paramName
+  );
+}
+// #endregion
 
-export function FromParam(): ParameterDecorator {
-  return (target, key, index) => {
-    const methodRule = getMethodRules(target, key as string);
-    methodRule[index] = (ctx: Context, name: string) => (ctx.params as any)[name];
+// #region Controller Middleware
+const beforeMiddlewares: {
+  [key: string]: GetMiddlewareType[],
+} = {};
+const afterMiddlewares: {
+  [key: string]: GetMiddlewareType[],
+} = {};
+export function beforeMiddware(middwares: GetMiddlewareType | GetMiddlewareType[]): MethodDecorator {
+  middwares = [].concat(middwares);
+  return (target, key) => {
+    const typeGlobalName = getGlobalType(target.constructor);
+    const route = routes.find(r => r.typeGlobalName === typeGlobalName && r.functionName === key);
+    if (route) {
+      route.beforeMiddleware.concat(middwares);
+    } else {
+      beforeMiddlewares[getRuleKey(target, key)] = middwares as GetMiddlewareType[];
+    }
   };
 }
-
-export function FromQuery(): ParameterDecorator {
-  return (target, key, index) => {
-    const methodRule = getMethodRules(target, key as string);
-    methodRule[index] = (ctx: Context, name: string) => (ctx.query as any)[name];
+export function afterMiddware(middwares: GetMiddlewareType | GetMiddlewareType[]): MethodDecorator {
+  middwares = [].concat(middwares);
+  return (target, key) => {
+    const typeGlobalName = getGlobalType(target.constructor);
+    const route = routes.find(r => r.typeGlobalName === typeGlobalName && r.functionName === key);
+    if (route) {
+      route.afterMiddleware.concat(middwares);
+    } else {
+      afterMiddlewares[getRuleKey(target, key)] = middwares as GetMiddlewareType[];
+    }
   };
 }
+// #endregion
 
-export function routerMetadata(data: RouterMetadataType = {}): any {
+export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
   return function (target: any, key: string) {
     const typeGlobalName = getGlobalType(target.constructor);
     const CtrlType = target.constructor;
@@ -108,6 +158,7 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
       ...data,
       typeGlobalName,
       typeClass: CtrlType,
+      functionName: key,
       paramTypes: getParameterNames(routerFn).map((name, i) => {
         return {
           name,
@@ -115,31 +166,32 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
         };
       }),
       returnType: Reflect.getMetadata('design:returntype', target, key),
+      beforeMiddleware: beforeMiddlewares[getRuleKey(target, key)] || [],
+      afterMiddleware: afterMiddlewares[getRuleKey(target, key)] || [],
+      call: () => () => { },
     };
 
-    typeInfo.functionName = key;
-
-    let nm = getNameAndMethod(typeInfo.functionName);
+    let name = getNameAndMethod(typeInfo.functionName);
     if (!typeInfo.url) {
       const ctrl = typeGlobalName
         .split('_')[0]
         .toLowerCase()
         .replace('controller', '');
-      typeInfo.url = `/${ctrl}/${nm.name}`;
+      typeInfo.url = `/${ctrl}/${name.name}`;
     }
     if (!typeInfo.method) {
-      typeInfo.method = nm.method;
+      typeInfo.method = name.method;
     }
     routes.push(typeInfo);
 
-    const methodRules = (paramRules[typeGlobalName] || {})[key] || {};
+    const methodRules = getMethodRules(target, key);
 
     const getArgs = (ctx: Context) => {
       return typeInfo.paramTypes.map((p, i) => {
         const name = p.name;
 
-        if (methodRules[i]) {
-          return methodRules[i](ctx, name);
+        if (methodRules.param[i]) {
+          return methodRules.param[i](ctx, name);
         }
 
         const param = ctx.params || {};
@@ -153,18 +205,22 @@ export function routerMetadata(data: RouterMetadataType = {}): any {
       const context = this || ctx;
       const ctrl = new CtrlType(context);
       const args = getArgs(context);
-      const ret = await Promise.resolve(routerFn.apply(ctrl, args));
-      if (ret !== undefined) {
-        context.body = ret;
+      try {
+        const ret = await Promise.resolve(routerFn.apply(ctrl, args));
+        if (ret !== undefined) {
+          context.body = ret;
+        }
+        return ret;
+      } catch (error) {
+        this.throw(error, 400);
       }
-      return ret;
     };
 
     typeInfo.call = () => target[key];
 
     return {
       value: call
-    };
+    } as TypedPropertyDescriptor<any>;
   };
 }
 

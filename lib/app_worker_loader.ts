@@ -83,7 +83,15 @@ export default class AppWorkerLoader extends EggLoader {
         return a.url > b.url ? -1 : 1;
       })
       .forEach(route => {
-        (this as any).app.router[route.method || 'all'](route.url, route.call());
+        (this as any).app.register(
+          route.url,
+          [].concat(route.method || 'all'),
+          [].concat(
+            route.beforeMiddleware.map(m => m(this.app)),
+            route.call(),
+            route.afterMiddleware.map(m => m(this.app)),
+          )
+        );
       });
   }
 }
