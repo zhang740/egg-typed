@@ -91,28 +91,25 @@ function getMethodRules(target: any, key: string) {
 }
 
 // #region ParameterDecorator
-export function FromCustom(custom: (ctx: Context, name: string) => any, paramName?: string): ParameterDecorator {
+export function FromCustom(custom: (ctx: Context, name: string) => any): ParameterDecorator {
   return (target, key, index) => {
     const methodRule = getMethodRules(target, key as string);
-    methodRule.param[paramName || index] = custom;
+    methodRule.param[index] = custom;
   };
 }
 export function FromBody(paramName?: string): ParameterDecorator {
   return FromCustom(
-    (ctx: Context, name: string) => (ctx.request.body as any)[name],
-    paramName
+    (ctx: Context, name: string) => (ctx.request.body as any)[paramName || name],
   );
 }
 export function FromParam(paramName?: string): ParameterDecorator {
   return FromCustom(
-    (ctx: Context, name: string) => (ctx.params as any)[name],
-    paramName
+    (ctx: Context, name: string) => (ctx.params as any)[paramName || name],
   );
 }
 export function FromQuery(paramName?: string): ParameterDecorator {
   return FromCustom(
-    (ctx: Context, name: string) => (ctx.query as any)[name],
-    paramName
+    (ctx: Context, name: string) => (ctx.query as any)[paramName || name],
   );
 }
 // #endregion
@@ -192,7 +189,7 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
     const getArgs = (ctx: Context) => {
       return typeInfo.paramTypes.map((p, i) => {
         const name = p.name;
-        let argValue;
+        let argValue = undefined;
 
         if (methodRules.param[i]) {
           argValue = methodRules.param[i](ctx, name);
@@ -200,7 +197,13 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
           const param = ctx.params || {};
           const query = ctx.query || {};
           const body = (ctx.request || {} as any).body || {};
-          argValue = param[name] || query[name] || body[name] || undefined;
+          if (name in param) {
+            argValue = param[name];
+          } else if (name in query) {
+            argValue = query[name];
+          } else if (name in body) {
+            argValue = body[name];
+          }
         }
 
         if (argValue === undefined) {
