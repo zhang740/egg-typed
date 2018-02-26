@@ -51,9 +51,12 @@ function getNameAndMethod(functionName: string) {
 const COMMENTS = /((\/\/.*$)|(\/\*[\s\S]*?\*\/))/mg;
 const DEFAULT_PARAMS = /=[^,]+/mg;
 const FAT_ARROWS = /=>.*$/mg;
+// TS_TO_ES6
+const ASYNC_DEFAULT_PARAMS = ', void 0, void 0, function* (';
 
 function getParameterNames(fn: Function) {
   let code = fn.toString()
+    .replace(ASYNC_DEFAULT_PARAMS, '')
     .replace(COMMENTS, '')
     .replace(FAT_ARROWS, '')
     .replace(DEFAULT_PARAMS, '');
@@ -189,15 +192,32 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
     const getArgs = (ctx: Context) => {
       return typeInfo.paramTypes.map((p, i) => {
         const name = p.name;
+        let argValue;
 
         if (methodRules.param[i]) {
-          return methodRules.param[i](ctx, name);
+          argValue = methodRules.param[i](ctx, name);
+        } else {
+          const param = ctx.params || {};
+          const query = ctx.query || {};
+          const body = (ctx.request || {} as any).body || {};
+          argValue = param[name] || query[name] || body[name] || undefined;
         }
 
-        const param = ctx.params || {};
-        const query = ctx.query || {};
-        const body = (ctx.request || {} as any).body || {};
-        return param[name] || query[name] || body[name] || undefined;
+        if (argValue === undefined) {
+          return argValue;
+        }
+        switch (p.type) {
+          case Number:
+            return parseFloat(argValue);
+
+          case String:
+            return `${argValue}`;
+
+          // TODO custom TypeFormatter
+
+          default:
+            return argValue;
+        }
       });
     };
 
