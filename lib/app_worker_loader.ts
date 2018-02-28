@@ -56,10 +56,10 @@ export default class AppWorkerLoader extends EggLoader {
     this.loadApp();
 
     // register service
-    this.registerServiceToAppIOC(this.app);
+    AppWorkerLoader.registerServiceToAppIOC(this.app);
 
     // register router
-    this.registerRouter(this.app);
+    AppWorkerLoader.registerRouter(this.app);
   }
 
   loadDir(dirPath: string) {
