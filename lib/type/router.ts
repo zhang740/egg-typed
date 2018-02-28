@@ -11,24 +11,26 @@ export type MethodType =
   // from egg
   'all' | 'resources' | 'register' | 'redirect';
 
-export interface RouterMetadataType {
+export interface RouterMetadataType<ExtType = any> {
   name?: string;
   method?: MethodType;
   url?: string | RegExp | string[] | RegExp[] | ((app: Application) => string);
   descrption?: string;
+  beforeMiddleware?: GetMiddlewareType[];
+  afterMiddleware?: GetMiddlewareType[];
+  extInfo?: ExtType;
+  onError?: (ctx: Context, error: Error) => void;
 }
 
 export type GetMiddlewareType = (app: Application) => (Function | Function[]);
 
-export interface RouterType extends RouterMetadataType {
+export interface RouterType<ExtType = any> extends RouterMetadataType<ExtType> {
   typeClass: any;
   typeGlobalName: string;
   functionName: string;
   paramTypes: { name: string, type: any }[];
   returnType: any;
   call: () => (ctx: Context) => any;
-  beforeMiddleware: GetMiddlewareType[];
-  afterMiddleware: GetMiddlewareType[];
 }
 
 const methods: MethodType[] = ['get', 'put', 'post', 'delete', 'patch'];
@@ -147,7 +149,7 @@ export function afterMiddware(middwares: GetMiddlewareType | GetMiddlewareType[]
 }
 // #endregion
 
-export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
+export function routerMetadata<T = any>(data: RouterMetadataType<T> = {}): MethodDecorator {
   return function (target: any, key: string) {
     const typeGlobalName = getGlobalType(target.constructor);
     const CtrlType = target.constructor;
@@ -155,6 +157,9 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
 
     const paramTypes = Reflect.getMetadata('design:paramtypes', target, key) || [];
     const typeInfo: RouterType = {
+      onError: function (ctx, err) {
+        ctx.throw(err);
+      },
       ...data,
       typeGlobalName,
       typeClass: CtrlType,
@@ -166,9 +171,9 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
         };
       }),
       returnType: Reflect.getMetadata('design:returntype', target, key),
-      beforeMiddleware: beforeMiddlewares[getRuleKey(target, key)] || [],
-      afterMiddleware: afterMiddlewares[getRuleKey(target, key)] || [],
-      call: () => () => { },
+      beforeMiddleware: (data.beforeMiddleware || []).concat(beforeMiddlewares[getRuleKey(target, key)] || []),
+      afterMiddleware: (data.afterMiddleware || []).concat(afterMiddlewares[getRuleKey(target, key)] || []),
+      call: () => target[key],
     };
 
     let name = getNameAndMethod(typeInfo.functionName);
@@ -224,29 +229,26 @@ export function routerMetadata(data: RouterMetadataType = {}): MethodDecorator {
       });
     };
 
-    const call = async function (this: Context, ctx: Context) {
-      const context = this || ctx;
-      const ctrl = new CtrlType(context);
-      const args = getArgs(context);
-      try {
-        const ret = await Promise.resolve(routerFn.apply(ctrl, args));
-        if (ret !== undefined) {
-          context.body = ret;
-        }
-        return ret;
-      } catch (error) {
-        this.throw(400, error);
-      }
-    };
-
-    typeInfo.call = () => target[key];
-
     return {
-      value: call
+      value: async function (this: any, ctx: Context) {
+        // 'this' maybe is Controller or Context, in Chair.
+        ctx = (this.request && this.response ? this : this.ctx) || ctx;
+        const ctrl = new CtrlType(ctx);
+        const args = getArgs(ctx);
+        try {
+          const ret = await Promise.resolve(routerFn.apply(ctrl, args));
+          if (ret !== undefined) {
+            ctx.body = ret;
+          }
+          return ret;
+        } catch (error) {
+          typeInfo.onError(ctx, error);
+        }
+      }
     } as TypedPropertyDescriptor<any>;
   };
 }
 
-export function getRouters() {
-  return routes;
+export function getRouters<ExtType = any>() {
+  return routes as RouterType<ExtType>[];
 }

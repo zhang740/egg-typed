@@ -12,6 +12,39 @@ export { EggLoader };
 export default class AppWorkerLoader extends EggLoader {
   app: EggApplication & Application;
 
+  public static registerServiceToAppIOC(app: Application) {
+    const ioc = app.iocContext;
+    getServices().forEach(service => {
+      const ServiceType = service.classConstructor;
+
+      ioc.register(ServiceType, ServiceType, { autoNew: false });
+    });
+  }
+
+  public static registerRouter(app: Application) {
+    getRouters()
+      .sort((a, b) => {
+        if (a.url === b.url) {
+          return 0;
+        }
+        if (a.url === '/*') {
+          return 1;
+        }
+        return a.url > b.url ? -1 : 1;
+      })
+      .forEach(route => {
+        app.register(
+          typeof route.url === 'function' ? route.url(app) : route.url,
+          [].concat(route.method || 'all'),
+          [].concat(
+            ...route.beforeMiddleware.map(m => m(app)),
+            route.call(),
+            ...route.afterMiddleware.map(m => m(app)),
+          )
+        );
+      });
+  }
+
   /**
    * 开始加载所有约定目录
    * @since 1.0.0
@@ -23,10 +56,10 @@ export default class AppWorkerLoader extends EggLoader {
     this.loadApp();
 
     // register service
-    this.registerServiceToAppIOC();
+    this.registerServiceToAppIOC(this.app);
 
     // register router
-    this.registerRouter();
+    this.registerRouter(this.app);
   }
 
   loadDir(dirPath: string) {
@@ -58,40 +91,5 @@ export default class AppWorkerLoader extends EggLoader {
     const self = this as any;
     const baseDir: string = self.options.baseDir;
     this.loadDir(path.join(baseDir, 'app'));
-  }
-
-  registerServiceToAppIOC() {
-    const app = this.app;
-
-    const ioc = app.iocContext;
-    getServices().forEach(service => {
-      const ServiceType = service.classConstructor;
-
-      ioc.register(ServiceType, ServiceType, { autoNew: false });
-    });
-  }
-
-  registerRouter() {
-    getRouters()
-      .sort((a, b) => {
-        if (a.url === b.url) {
-          return 0;
-        }
-        if (a.url === '/*') {
-          return 1;
-        }
-        return a.url > b.url ? -1 : 1;
-      })
-      .forEach(route => {
-        this.app.register(
-          typeof route.url === 'function' ? route.url(this.app) : route.url,
-          [].concat(route.method || 'all'),
-          [].concat(
-            ...route.beforeMiddleware.map(m => m(this.app)),
-            route.call(),
-            ...route.afterMiddleware.map(m => m(this.app)),
-          )
-        );
-      });
   }
 }
