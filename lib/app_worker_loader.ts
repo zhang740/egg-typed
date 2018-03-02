@@ -33,15 +33,17 @@ export default class AppWorkerLoader extends EggLoader {
         return a.url > b.url ? -1 : 1;
       })
       .forEach(route => {
-        app.register(
-          typeof route.url === 'function' ? route.url(app) : route.url,
-          [].concat(route.method || 'all'),
-          [].concat(
-            ...route.beforeMiddleware.map(m => m(app)),
-            route.call(),
-            ...route.afterMiddleware.map(m => m(app)),
-          )
-        );
+        // can't get params in url, when url is array. (chair? egg? koa?)
+        [].concat(typeof route.url === 'function' ? route.url(app) : route.url)
+          .forEach(url => app.register(
+            url,
+            [].concat(route.method || 'all'),
+            [].concat(
+              ...route.beforeMiddleware.map(m => m(app)),
+              route.call(),
+              ...route.afterMiddleware.map(m => m(app)),
+            )
+          ));
       });
   }
 
