@@ -3,6 +3,16 @@ import { getGlobalType } from 'power-di/utils';
 import { Context } from './base_context_class';
 import { Application } from '../framework';
 
+const generatorFuncPrototype = Object.getPrototypeOf(function* (): any { });
+export function isGeneratorFunction(fn: any) {
+  return typeof fn === 'function' && Object.getPrototypeOf(fn) === generatorFuncPrototype;
+}
+
+const asyncFuncPrototype = Object.getPrototypeOf(async function () { });
+export function isAsyncFunction(fn: any) {
+  return typeof fn === 'function' && Object.getPrototypeOf(fn) === asyncFuncPrototype;
+}
+
 const routes: RouterType[] = [];
 
 export type MethodType =
@@ -229,8 +239,25 @@ export function routerMetadata<T = any>(data: RouterMetadataType<T> = {}): Metho
       });
     };
 
-    return {
-      value: async function (this: any, ctx: Context) {
+    let value = routerFn;
+    if (isGeneratorFunction(routerFn)) {
+      value = function* (this: any, ctx: Context) {
+        // 'this' maybe is Controller or Context, in Chair.
+        ctx = (this.request && this.response ? this : this.ctx) || ctx;
+        const ctrl = new CtrlType(ctx);
+        const args = getArgs(ctx);
+        try {
+          const ret = yield routerFn.apply(ctrl, args);
+          if (ret !== undefined) {
+            ctx.body = ret;
+          }
+          return ret;
+        } catch (error) {
+          typeInfo.onError(ctx, error);
+        }
+      };
+    } else {
+      value = async function (this: any, ctx: Context) {
         // 'this' maybe is Controller or Context, in Chair.
         ctx = (this.request && this.response ? this : this.ctx) || ctx;
         const ctrl = new CtrlType(ctx);
@@ -244,7 +271,12 @@ export function routerMetadata<T = any>(data: RouterMetadataType<T> = {}): Metho
         } catch (error) {
           typeInfo.onError(ctx, error);
         }
-      }
+      };
+    }
+
+
+    return {
+      value,
     } as TypedPropertyDescriptor<any>;
   };
 }
