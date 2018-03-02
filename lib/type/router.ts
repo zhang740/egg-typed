@@ -23,7 +23,7 @@ export type MethodType =
 
 export interface RouterMetadataType<ExtType = any> {
   name?: string;
-  method?: MethodType;
+  method?: MethodType | MethodType[];
   url?: string | RegExp | string[] | RegExp[] | ((app: Application) => string);
   description?: string;
   beforeMiddleware?: GetMiddlewareType[];
