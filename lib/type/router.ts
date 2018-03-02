@@ -15,7 +15,7 @@ export interface RouterMetadataType<ExtType = any> {
   name?: string;
   method?: MethodType;
   url?: string | RegExp | string[] | RegExp[] | ((app: Application) => string);
-  descrption?: string;
+  description?: string;
   beforeMiddleware?: GetMiddlewareType[];
   afterMiddleware?: GetMiddlewareType[];
   extInfo?: ExtType;
