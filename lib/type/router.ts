@@ -45,7 +45,7 @@ export interface RouterType<ExtType = any> extends RouterMetadataType<ExtType> {
 
 const methods: MethodType[] = ['get', 'put', 'post', 'delete', 'patch'];
 function getNameAndMethod(functionName: string) {
-  let name = functionName, functionMethod: MethodType = 'get';
+  let name = functionName, functionMethod: MethodType = 'all';
   functionName = functionName.toLowerCase();
 
   for (let i = 0; i < methods.length; i++) {
