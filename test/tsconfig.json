@@ -4,7 +4,7 @@
     "module": "commonjs",
     "jsx": "react",
     "moduleResolution": "node",
-    "noImplicitAny": true,
+    "noImplicitAny": false,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "preserveConstEnums": true,
@@ -12,11 +12,11 @@
     "sourceMap": false,
     "pretty": true,
     "noUnusedLocals": false,
-    "noUnusedParameters": true,
+    "noUnusedParameters": false,
     "importHelpers": true
   },
   "compileOnSave": true,
   "exclude": [
-    "test"
+    "./fixtures/meta/app/assets"
   ]
 }

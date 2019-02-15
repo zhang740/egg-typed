@@ -1,0 +1,83 @@
+{
+  "MetaController": [
+    {
+      "name": "简写",
+      "functionName": "sort",
+      "typeGlobalName": "MetaController",
+      "method": [
+        "get"
+      ],
+      "url": [
+        "/meta/sort"
+      ],
+      "paramTypes": [],
+      "returnType": "Promise"
+    },
+    {
+      "name": "put",
+      "functionName": "put",
+      "typeGlobalName": "MetaController",
+      "method": [
+        "put"
+      ],
+      "url": [
+        "/meta/put"
+      ],
+      "paramTypes": [
+        {
+          "name": "id",
+          "type": "Number"
+        }
+      ],
+      "returnType": "Promise"
+    },
+    {
+      "name": "post",
+      "functionName": "postData",
+      "typeGlobalName": "MetaController",
+      "method": [
+        "post"
+      ],
+      "url": [
+        "/meta/post"
+      ],
+      "paramTypes": [
+        {
+          "name": "param",
+          "type": "Object"
+        }
+      ],
+      "returnType": "Promise"
+    },
+    {
+      "name": "首页",
+      "functionName": "index",
+      "typeGlobalName": "MetaController",
+      "method": [
+        "get"
+      ],
+      "url": [
+        "/meta/index"
+      ],
+      "paramTypes": [
+        {
+          "name": "id",
+          "type": "String"
+        },
+        {
+          "name": "n",
+          "type": "Number"
+        },
+        {
+          "name": "e",
+          "type": "String"
+        },
+        {
+          "name": "d",
+          "type": "Date"
+        }
+      ],
+      "returnType": "Promise"
+    }
+  ]
+}

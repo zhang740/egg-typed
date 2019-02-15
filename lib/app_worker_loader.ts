@@ -1,50 +1,49 @@
-'use strict';
-
 import * as fs from 'fs';
 import * as path from 'path';
-import { getRouters } from './type/router';
-import { Application as EggApplication } from 'egg';
+import { setCreateInstanceHook } from 'egg-aop';
+import { trackingInstance, inspectPromiseAll } from 'egg-typed-tracking';
+import { Application as EggApplication, Context } from 'egg';
 import { Application } from './framework';
-import { getServices } from './type/service';
+import { loadFile, registerTSNode } from './loader_util';
+import { getRefMapMetadata } from './meta/meta';
+import { noTrackingSymbol, trackingMiddleware } from './middleware/tracking';
+import { addDefaultMiddleware } from '.';
 const EggLoader = require('egg').AppWorkerLoader as any;
 export { EggLoader };
+
+
+export interface ETConfig {
+  /** use with autoLoadDir */
+  excludeDir: string[];
+  /** default: true */
+  autoLoadDir: boolean;
+  /** default: true */
+  useTSRuntime: boolean;
+  /** default: true */
+  useTracking: boolean;
+  /** use meta api, default: true */
+  useMetaApi: boolean;
+  /** meta base url, default: '/$metadata' */
+  metaPath: string;
+}
+
+function getSymbol(obj: any, symbol: symbol) {
+  const desc = Object.getOwnPropertyDescriptor(obj, symbol);
+  return desc && desc.value;
+}
 
 export default class AppWorkerLoader extends EggLoader {
   app: EggApplication & Application;
 
-  public static registerServiceToAppIOC(app: Application) {
-    const ioc = app.iocContext;
-    getServices().forEach(service => {
-      const ServiceType = service.classConstructor;
-
-      ioc.register(ServiceType, ServiceType, { autoNew: false });
-    });
+  protected metadataPath = path.join(this.baseDir, 'run');
+  private get etConfig(): ETConfig {
+    return (this.app.config && this.app.config.et) || {
+      useTSRuntime: false,
+    };
   }
-
-  public static registerRouter(app: Application) {
-    getRouters()
-      .sort((a, b) => {
-        if (a.url === b.url) {
-          return 0;
-        }
-        if (a.url === '/*') {
-          return 1;
-        }
-        return a.url > b.url ? -1 : 1;
-      })
-      .forEach(route => {
-        // can't get params in url, when url is array. (chair? egg? koa?)
-        [].concat(typeof route.url === 'function' ? route.url(app) : route.url)
-          .forEach(url => app.register(
-            url,
-            [].concat(route.method || 'all'),
-            [].concat(
-              ...route.beforeMiddleware.map(m => m(app)),
-              route.call(),
-              ...route.afterMiddleware.map(m => m(app)),
-            )
-          ));
-      });
+  private registeredTS = false;
+  protected get baseDir() {
+    return this.options.baseDir as string;
   }
 
   /**
@@ -52,46 +51,90 @@ export default class AppWorkerLoader extends EggLoader {
    * @since 1.0.0
    */
   load() {
+    addDefaultMiddleware([
+      trackingMiddleware as any,
+    ]);
+
     super.load();
 
+    if (this.etConfig.useTSRuntime) {
+      registerTSNode(this.baseDir);
+      this.registeredTS = true;
+    }
+
+    if (!fs.existsSync(this.metadataPath)) {
+      fs.mkdirSync(this.metadataPath);
+    }
+
+    // TODO 待分离tracking插件
+    if (this.etConfig.useTracking) {
+      inspectPromiseAll();
+      setCreateInstanceHook((inst, _app, ctx: Context) => {
+        if (!ctx || !getSymbol(ctx, noTrackingSymbol)) {
+          trackingInstance(inst);
+        }
+        return inst;
+      });
+    }
+
     // load app files
-    this.loadApp();
+    if (this.etConfig.autoLoadDir) {
+      this.autoLoadApp();
+    }
 
-    // register service
-    AppWorkerLoader.registerServiceToAppIOC(this.app);
+    if (this.etConfig.useMetaApi) {
+      require('./meta/controller');
+    }
 
-    // register router
-    AppWorkerLoader.registerRouter(this.app);
+    // 组件依赖关系元信息
+    fs.writeFileSync(
+      path.join(this.metadataPath, 'ref_map.json'),
+      JSON.stringify(getRefMapMetadata(this.app.config), null, 2), { encoding: 'utf8' }
+    );
   }
 
-  loadDir(dirPath: string) {
+  autoLoadDir(dirPath: string) {
     fs.readdirSync(dirPath)
-      .filter(dir => [
-        'assets',
-        'view',
-        'template',
-        'public',
-        'test',
-      ].indexOf(dir) < 0)
+      .filter(dir => [].concat(this.etConfig.excludeDir).indexOf(dir) < 0)
       .forEach(dirName => {
         const fullPath = path.join(dirPath, dirName);
         const stat = fs.statSync(fullPath);
         if (stat.isDirectory()) {
-          this.loadDir(fullPath);
-        } else if (stat.isFile && path.parse(dirName).ext === '.js') {
-          try {
-            require(fullPath);
-          } catch (err) {
-            err.message = `[egg-typed] load file: ${fullPath}, error: ${err.message}`;
-            throw err;
+          this.autoLoadDir(fullPath);
+        } else if (stat.isFile()) {
+          const ext = path.parse(dirName).ext;
+          if (this.etConfig.useTSRuntime) {
+            if (ext === '.ts' && dirName.indexOf('.d.ts') < 0) {
+              loadFile(fullPath);
+            }
+          } else {
+            if (ext === '.js') {
+              loadFile(fullPath);
+            }
           }
         }
       });
   }
 
-  loadApp() {
-    const self = this as any;
-    const baseDir: string = self.options.baseDir;
-    this.loadDir(path.join(baseDir, 'app'));
+  autoLoadApp() {
+    this.autoLoadDir(path.join(this.baseDir, 'app'));
+  }
+
+  loadFile(filepath: string, ...inject: any[]) {
+    if (!this.registeredTS) {
+      return super.loadFile(filepath, ...inject);
+    }
+    const tsFilePath = filepath.replace('.js', '.ts');
+    if (!fs.existsSync(tsFilePath)) {
+      // fallback
+      return super.loadFile(filepath, ...inject);
+    }
+    let ret = loadFile(tsFilePath);
+    if ('default' in ret) {
+      ret = ret.default;
+    }
+    // function(arg1, args, ...) {}
+    if (inject.length === 0) inject = [this.app];
+    return ret instanceof Function ? ret(...inject) : ret;
   }
 }

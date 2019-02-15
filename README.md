@@ -19,60 +19,25 @@
 
 An onther style (like C#/java) of [egg](https://github.com/eggjs/egg) enterprise app framework.
 
-All files in `app` directory (exclude the directory name is kind of ['view', 'template', 'public']) will load automatically.
-
-Demo: [odux-egg-example](https://github.com/zhang740/odux-egg-example)
-
 ## Quick overview
 
-### Controller
+### 路由
+egg-controller
+
 ```ts
-import { Controller, routerMetadata } from 'egg-typed';
-import TestService from '../service/Test';
-
-export default class HomeController extends Controller {
-
-  // @lazyInject('Context', TestService)
-  // @lazyInjectFromCtx() // equal
-  @lazyInject('Context') // tsconfig.json -> "emitDecoratorMetadata": true
-  testService: TestService;
-
-  private requestInfo(id = 'defaultId') {
-    return {
-      url: this.ctx.url,
-      test_service_name: this.testService.get(id).name,
-    };
+export class HomeController extends Controller { // 如果不需要访问ctx，则不需要继承
+  @route('/api/xxx', { name: '获取XXX数据' })
+  async getXXX(size: number, page: number) {
+    return 'homeIndex';
   }
-
-  // url by contract
-  // support prefix: 'get'(default), 'put', 'post', 'delete', 'patch'
-  // e.g this url is: '/home/name', method: 'get'
-  // 'home' is the name of controller, 'name' is the name of method.
-  @routerMetadata()
-  getName() {
-    return this.requestInfo();
-  }
-
-  // auto fill params, params > query > body
-  // e.g request: 
-  // /api/params?id=123&code=333
-  // /api/params/123?code=333
-  @routerMetadata({ name: 'params demo', url: '/api/params' })
-  query(id: number, code: string) {
-    return {
-      ...this.requestInfo(`${id}`),
-      id, code,
-    };
-  }
-};
+}
 ```
 
-### Service
-```ts
-import { Service, serviceMetadata, Context } from 'egg-typed';
+### 依赖注入
+egg-aop
 
-@serviceMetadata()
-export default class TestService extends Service {
+```ts
+export class TestService extends Service {
   get(id: string | number) {
     return {
       id,
@@ -81,17 +46,39 @@ export default class TestService extends Service {
   }
 }
 
+export class HomeController extends Controller {
+
+  @lazyInject()
+  testService: TestService;
+
+  @route('/api/xxx', { name: '获取XXX数据' })
+  async getXXX(id: string) {
+    return this.testService.get(id);
+  }
+
+}
 ```
 
-## Using && Configure
+### ORM
+
+### 调用链跟踪
+
+### 场景测试
+
+## 使用 & 配置方法
+
 1. use egg-init to initialize a project.
+
 2. config project.json add:
+
 ```json
   "egg": {
     "framework": "egg-typed"
   },
 ```
+
 3. An example of tsconfig.json:
+
 ```json
 {
   "compilerOptions": {
@@ -111,25 +98,6 @@ export default class TestService extends Service {
 }
 ```
 
-## QuickStart
-
-```bash
-$ npm install
-$ npm test
-```
-
-publish your framework to npm, then change app's dependencies:
-
-```js
-// {app_root}/index.js
-require('egg-typed').startCluster({
-  baseDir: __dirname,
-  // port: 7001, // default to 7001
-});
-
-```
-
 ## Questions & Suggestions
 
 Please open an issue [here](https://github.com/zhang740/egg-typed/issues).
-
