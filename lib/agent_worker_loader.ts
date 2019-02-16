@@ -5,24 +5,25 @@ const EggLoader = require('egg').AgentWorkerLoader as any;
 export { EggLoader };
 
 export default class AgentWorkerLoader extends EggLoader {
-
   protected get baseDir() {
     return this.options.baseDir as string;
   }
   private get etConfig(): ETConfig {
-    return (this.app.config && this.app.config.et) || {
-      useTSRuntime: false,
-    };
+    return (
+      (this.app.config && this.app.config.et) || {
+        useTSRuntime: false
+      }
+    );
   }
   private registeredTS = false;
 
   load() {
-    super.load();
-
     if (this.etConfig.useTSRuntime) {
       registerTSNode(this.baseDir);
       this.registeredTS = true;
     }
+
+    super.load();
   }
 
   loadFile(filepath: string, ...inject: any[]) {

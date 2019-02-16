@@ -11,7 +11,6 @@ import { addDefaultMiddleware } from '.';
 const EggLoader = require('egg').AppWorkerLoader as any;
 export { EggLoader };
 
-
 export interface ETConfig {
   /** use with autoLoadDir */
   excludeDir: string[];
@@ -37,9 +36,11 @@ export default class AppWorkerLoader extends EggLoader {
 
   protected metadataPath = path.join(this.baseDir, 'run');
   private get etConfig(): ETConfig {
-    return (this.app.config && this.app.config.et) || {
-      useTSRuntime: false,
-    };
+    return (
+      (this.app.config && this.app.config.et) || {
+        useTSRuntime: false,
+      }
+    );
   }
   private registeredTS = false;
   protected get baseDir() {
@@ -51,16 +52,14 @@ export default class AppWorkerLoader extends EggLoader {
    * @since 1.0.0
    */
   load() {
-    addDefaultMiddleware([
-      trackingMiddleware as any,
-    ]);
-
-    super.load();
-
     if (this.etConfig.useTSRuntime) {
       registerTSNode(this.baseDir);
       this.registeredTS = true;
     }
+
+    addDefaultMiddleware([trackingMiddleware as any]);
+
+    super.load();
 
     if (!fs.existsSync(this.metadataPath)) {
       fs.mkdirSync(this.metadataPath);
@@ -89,7 +88,8 @@ export default class AppWorkerLoader extends EggLoader {
     // 组件依赖关系元信息
     fs.writeFileSync(
       path.join(this.metadataPath, 'ref_map.json'),
-      JSON.stringify(getRefMapMetadata(this.app.config), null, 2), { encoding: 'utf8' }
+      JSON.stringify(getRefMapMetadata(this.app.config), null, 2),
+      { encoding: 'utf8' }
     );
   }
 
