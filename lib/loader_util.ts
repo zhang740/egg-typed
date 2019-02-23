@@ -1,6 +1,7 @@
 import * as tsNode from 'ts-node';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as tsConfigPaths from 'tsconfig-paths';
 
 export function loadFile(path: string) {
   try {
@@ -22,7 +23,10 @@ function getTSConfig(baseDir: string) {
 }
 
 export function registerTSNode(baseDir: string) {
-  tsNode.register({
-    ...getTSConfig(baseDir),
+  const config = { ...getTSConfig(baseDir) };
+  tsNode.register(Object.assign({}, config));
+  tsConfigPaths.register({
+    baseUrl: baseDir,
+    paths: config.compilerOptions.paths,
   });
 }
