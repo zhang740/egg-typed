@@ -1,6 +1,6 @@
 {
   "name": "egg-typed",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "typed for egg.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
@@ -68,7 +68,7 @@
     "autod": "autod",
     "ts:test": "rimraf test/**/*.js && tsc -p test",
     "ts": "rimraf app/**/*.js lib/**/*.js app/**/*.d.ts lib/**/*.d.ts && tsc",
-    "prepublish": "npm run ts",
+    "prepublish": "npm run test && npm run ts",
     "postpublish": "node scripts/published.js"
   },
   "ci": {
