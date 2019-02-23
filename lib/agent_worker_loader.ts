@@ -24,7 +24,7 @@ export default class AgentWorkerLoader extends EggLoader {
       registerTSNode(this.baseDir);
       this.registeredTS = true;
       if (this.config.controller) {
-        this.config.controller = (
+        this.config.controller.fork = (
           modulePath: string,
           args?: ReadonlyArray<string>,
           options?: ForkOptions
