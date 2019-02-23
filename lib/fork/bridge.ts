@@ -1,19 +1,10 @@
 import * as path from 'path';
 import { registerTSNode } from '../loader_util';
 
-const args = process.argv;
-
-const baseDir = args[args.length - 2];
-const filePath = args[args.length - 1];
+const args = process.argv.splice(2, 2);
+const baseDir = args[0];
+const filePath = args[1];
+process.argv[1] = filePath;
 
 registerTSNode(baseDir);
-
-let func = require(path.join(baseDir, filePath));
-
-if ('default' in func) {
-  func = func.default;
-}
-
-if (func instanceof Function) {
-  func();
-}
+require(filePath);

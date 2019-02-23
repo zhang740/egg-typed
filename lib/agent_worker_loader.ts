@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import { registerTSNode, loadFile } from './loader_util';
 import { ETConfig } from './app_worker_loader';
+import { fork } from 'child_process';
+import { fork as tsFork } from './fork';
 const EggLoader = require('egg').AgentWorkerLoader as any;
 export { EggLoader };
 
@@ -11,16 +13,18 @@ export default class AgentWorkerLoader extends EggLoader {
   private get etConfig(): ETConfig {
     return (
       (this.app.config && this.app.config.et) || {
-        useTSRuntime: false
+        useTSRuntime: false,
       }
     );
   }
+  fork = fork;
   private registeredTS = false;
 
   load() {
     if (this.etConfig.useTSRuntime) {
       registerTSNode(this.baseDir);
       this.registeredTS = true;
+      this.fork = (...args) => tsFork(this.baseDir, ...args);
     }
 
     super.load();
