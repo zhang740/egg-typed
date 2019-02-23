@@ -8,6 +8,8 @@ import { loadFile, registerTSNode } from './loader_util';
 import { getRefMapMetadata } from './meta/meta';
 import { noTrackingSymbol, trackingMiddleware } from './middleware/tracking';
 import { addDefaultMiddleware } from '.';
+import { ForkOptions } from 'child_process';
+import { fork as tsFork } from './fork';
 const EggLoader = require('egg').AppWorkerLoader as any;
 export { EggLoader };
 
@@ -32,9 +34,6 @@ function getSymbol(obj: any, symbol: symbol) {
 }
 
 export default class AppWorkerLoader extends EggLoader {
-  app: EggApplication & Application;
-
-  protected metadataPath = path.join(this.baseDir, 'run');
   private get etConfig(): ETConfig {
     return (
       (this.app.config && this.app.config.et) || {
@@ -42,10 +41,14 @@ export default class AppWorkerLoader extends EggLoader {
       }
     );
   }
-  private registeredTS = false;
   protected get baseDir() {
     return this.options.baseDir as string;
   }
+  app: EggApplication & Application;
+
+  protected metadataPath = path.join(this.baseDir, 'run');
+
+  private registeredTS = false;
 
   /**
    * 开始加载所有约定目录
@@ -55,6 +58,13 @@ export default class AppWorkerLoader extends EggLoader {
     if (this.etConfig.useTSRuntime) {
       registerTSNode(this.baseDir);
       this.registeredTS = true;
+      if (this.config.controller) {
+        this.config.controller = (
+          modulePath: string,
+          args?: ReadonlyArray<string>,
+          options?: ForkOptions
+        ) => tsFork(this.baseDir, modulePath, args, options);
+      }
     }
 
     addDefaultMiddleware([trackingMiddleware as any]);

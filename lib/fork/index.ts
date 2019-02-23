@@ -1,6 +1,12 @@
 import * as path from 'path';
-import { fork as cpFork, ChildProcess } from 'child_process';
+import { fork as cpFork, ForkOptions } from 'child_process';
 
-export function fork(baseDir: string, filePath: string) {
-  return cpFork(path.join(__dirname, './bridge.js'), [baseDir, filePath]);
+export function fork(
+  /** for ts-node */
+  baseDir: string,
+  modulePath: string,
+  args?: ReadonlyArray<string>,
+  options?: ForkOptions
+) {
+  return cpFork(path.join(__dirname, 'bridge.js'), [baseDir, modulePath, ...(args || [])], options);
 }
