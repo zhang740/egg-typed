@@ -3,7 +3,7 @@ import * as path from 'path';
 import { GetReturnType, ClassType } from 'power-di';
 import { getGlobalType } from 'power-di/utils';
 import { setCreateInstanceHook, removeCreateInstanceHook } from 'egg-aop';
-import { assert, app } from 'egg-mock/bootstrap';
+import { assert, app, mock } from 'egg-mock/bootstrap';
 import { ReqTestBase, SceneTestBase } from './lib/test/base';
 import { getInstance } from './di';
 import { BaseModel, IProvider, BaseRepository } from './orm';
@@ -14,7 +14,8 @@ import { BaseModel, IProvider, BaseRepository } from './orm';
  * @param whiteList scene id list
  */
 export function getAllTestScene(testSceneDir: string, whiteList: string[] = []) {
-  return fs.readdirSync(path.join(testSceneDir))
+  return fs
+    .readdirSync(path.join(testSceneDir))
     .filter(dir => fs.statSync(path.join(testSceneDir, dir)).isDirectory())
     .map(dir => {
       return new SceneTest(path.join(testSceneDir, dir));
@@ -36,51 +37,56 @@ export class ReqTest extends ReqTestBase {
           request.send(info.body);
         }
 
-        request.then((res: any, err: any) => {
-          this.stopMockData();
-          if (err) {
+        request
+          .then((res: any, err: any) => {
+            this.stopMockData();
+            if (err) {
+              console.error(err);
+              reject(err);
+            }
+
+            if (info.judge) {
+              const ret = new Function('with(this){ ' + info.judge + '}').call(context);
+              if (ret === false) {
+                throw new Error('判定失败');
+              }
+            }
+
+            if (info.result) {
+              if (info.result.status) {
+                assert.equal(res.status, info.result.status, `status, ${JSON.stringify(res.text)}`);
+              }
+              if (info.result.body) {
+                const accept = info.header['accept'] || '';
+                let resBody =
+                  res.status === 302 || accept.includes('text/html') ? res.text : res.body;
+                assert.deepEqual(resBody, info.result.body, `body, ${JSON.stringify(res.text)}`);
+              }
+              if (info.result.error) {
+                assert.deepEqual(
+                  {
+                    code: res.body.code,
+                    message: res.body.message,
+                  },
+                  info.result.error,
+                  'error'
+                );
+              }
+            }
+
+            resolve();
+          })
+          .catch((err: any) => {
+            this.stopMockData();
             console.error(err);
             reject(err);
-          }
-
-          if (info.judge) {
-            const ret = new Function('with(this){ ' + info.judge + '}').call(context);
-            if (ret === false) {
-              throw new Error('判定失败');
-            }
-          }
-
-          if (info.result) {
-            if (info.result.status) {
-              assert.equal(res.status, info.result.status, `status, ${JSON.stringify(res.text)}`);
-            }
-            if (info.result.body) {
-              const accept = info.header['accept'] || '';
-              let resBody = res.status === 302 || accept.includes('text/html') ?
-                res.text : res.body;
-              assert.deepEqual(resBody, info.result.body, `body, ${JSON.stringify(res.text)}`);
-            }
-            if (info.result.error) {
-              assert.deepEqual({
-                code: res.body.code,
-                message: res.body.message,
-              }, info.result.error, 'error');
-            }
-          }
-
-          resolve();
-        }).catch((err: any) => {
-          this.stopMockData();
-          console.error(err);
-          reject(err);
-        });
+          });
       });
     });
   }
 }
 
 export class SceneTest extends SceneTestBase<ReqTest> {
-
   protected loadReqTest() {
     this._testReq = this.info.req.map(reqId => {
       return new ReqTest(path.join(this.dir, reqId));
@@ -101,9 +107,7 @@ export class SceneTest extends SceneTestBase<ReqTest> {
   }
 }
 
-export declare type MockType<T> = {
-  [P in keyof T]?: any;
-};
+export declare type MockType<T> = { [P in keyof T]?: any };
 
 export class GlobalMock {
   private mockData = new Map<string, Function>();
@@ -152,12 +156,29 @@ export class TestSuite {
     return provider.getRepositoryByModelClass(modelType);
   }
 
-  mockRepo<T extends typeof BaseModel>(modelType: T, func: (inst: MockType<BaseRepository>) => void) {
+  mockRepo<T extends typeof BaseModel>(
+    modelType: T,
+    func: (inst: MockType<BaseRepository>) => void
+  ) {
     func(this.getRepo(modelType));
   }
-
 }
 
 export function getTestSuite() {
   return new TestSuite();
+}
+
+/** 直接 mock class proto */
+export function mockProto<T, K extends keyof T, P>(
+  proto: T,
+  method: K,
+  mockData: T[K] extends (...args: P[]) => any
+    ? (
+        ...args: P[]
+      ) => ReturnType<T[K]> extends Promise<infer X>
+        ? Partial<X> | Promise<Partial<X>>
+        : Partial<ReturnType<T[K]>>
+    : T[K]
+) {
+  mock(proto, method as any, mockData);
 }
