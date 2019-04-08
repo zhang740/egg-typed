@@ -1,3 +1,8 @@
+1.0.6 / 2019-04-08
+==================
+
+  * feat: circle dependency and model for orm-ts transformer.
+
 1.0.5 / 2019-02-23
 ==================
 
